@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SmartMonitor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;800&display=swap');
+:root{--bg:#0a0e17;--surface:#111827;--border:#1e2d45;--accent:#00d4ff;--danger:#ef4444;--warning:#f59e0b;--success:#10b981;--text:#e2e8f0;--muted:#64748b;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+header{display:flex;align-items:center;justify-content:space-between;padding:1.5rem 2rem;border-bottom:1px solid var(--border);background:rgba(10,14,23,0.9);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;}
+.logo{font-size:1.4rem;font-weight:800;color:var(--accent);}.logo span{color:var(--text);}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success);animation:pulse 2s infinite;display:inline-block;margin-right:8px;}
+.dot.off{background:var(--danger);box-shadow:0 0 8px var(--danger);animation:none;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.conn{font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--muted);}
+main{padding:2rem;max-width:1400px;margin:0 auto;}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem;}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;position:relative;overflow:hidden;}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);}
+.scard.warn::before{background:var(--warning);}.scard.danger::before{background:var(--danger);}
+.slabel{font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem;}
+.sval{font-size:2rem;font-weight:800;color:var(--accent);}
+.sunit{font-size:.8rem;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace;}
+.tabs{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+.tab{padding:.4rem 1rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.8rem;cursor:pointer;transition:all .15s;}
+.tab:hover{border-color:var(--accent);color:var(--accent);}
+.tab.active{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:600;}
+.tab.anom{border-color:var(--danger);color:var(--danger);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;}
+@media(max-width:900px){.grid2{grid-template-columns:1fr;}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;}
+.ctitle{font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;}
+.chw{position:relative;height:200px;}
+.mrow{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid var(--border);}
+.mrow:last-child{border-bottom:none;}
+.mname{font-size:.85rem;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.mval{font-size:1.4rem;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.mbw{flex:1;margin:0 1rem;height:4px;background:#1a2235;border-radius:2px;overflow:hidden;}
+.mb{height:100%;border-radius:2px;transition:width .5s;}
+.alog{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;}
+.aitem{display:flex;gap:1rem;padding:.6rem 0;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.78rem;align-items:center;}
+.aitem:last-child{border-bottom:none;}
+.abadge{padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:600;background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3);white-space:nowrap;}
+.atime{color:var(--muted);white-space:nowrap;}.aroom{color:var(--accent);}
+.empty{text-align:center;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.8rem;padding:2rem;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Smart<span>Monitor</span></div>
+  <div><span class="dot" id="dot"></span><span class="conn" id="conn">connecting...</span></div>
+</header>
+<main>
+  <div class="summary">
+    <div class="scard"><div class="slabel">Active Rooms</div><div class="sval" id="s-rooms">—</div><div class="sunit">monitored</div></div>
+    <div class="scard" id="sc-temp"><div class="slabel">Avg Temperature</div><div class="sval" id="s-temp">—</div><div class="sunit">°C</div></div>
+    <div class="scard" id="sc-co2"><div class="slabel">Max CO₂</div><div class="sval" id="s-co2">—</div><div class="sunit">ppm</div></div>
+    <div class="scard" id="sc-anom"><div class="slabel">Anomalies (1h)</div><div class="sval" id="s-anom">0</div><div class="sunit">detected</div></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="grid2">
+    <div class="card"><div class="ctitle">Temperature — <span id="rl1">—</span></div><div class="chw"><canvas id="tc"></canvas></div></div>
+    <div class="card"><div class="ctitle">CO₂ Level — <span id="rl2">—</span></div><div class="chw"><canvas id="cc"></canvas></div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><div class="ctitle">Live Readings</div><div id="metrics"><div class="empty">Waiting for data...</div></div></div>
+    <div class="alog"><div class="ctitle">Anomaly Log</div><div id="alog"><div class="empty">No anomalies detected ✓</div></div></div>
+  </div>
+</main>
+<script>
+const WS='ws://localhost:8000/ws';
+const MAX=40;
+let room=null,latest={},hist={},alog=[],acnt=0;
+const co={responsive:true,maintainAspectRatio:false,animation:{duration:300},plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748b',font:{family:'JetBrains Mono',size:10},maxTicksLimit:6},grid:{color:'#1e2d45'}},y:{ticks:{color:'#64748b',font:{family:'JetBrains Mono',size:10}},grid:{color:'#1e2d45'}}}};
+const tc=new Chart(document.getElementById('tc'),{type:'line',data:{labels:[],datasets:[{data:[],borderColor:'#00d4ff',backgroundColor:'rgba(0,212,255,0.08)',fill:true,tension:0.4,pointRadius:2}]},options:{...co,scales:{...co.scales,y:{...co.scales.y,min:10,max:40}}}});
+const cc=new Chart(document.getElementById('cc'),{type:'line',data:{labels:[],datasets:[{data:[],borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,0.08)',fill:true,tension:0.4,pointRadius:2}]},options:{...co,scales:{...co.scales,y:{...co.scales.y,min:300,max:1800}}}});
+function connect(){
+  const ws=new WebSocket(WS);
+  ws.onopen=()=>{document.getElementById('dot').className='dot';document.getElementById('conn').textContent='live';};
+  ws.onclose=()=>{document.getElementById('dot').className='dot off';document.getElementById('conn').textContent='reconnecting...';setTimeout(connect,3000);};
+  ws.onmessage=e=>handle(JSON.parse(e.data));
+}
+function handle(d){
+  const r=d.room;
+  latest[r]=d;
+  if(!hist[r])hist[r]=[];
+  hist[r].push(d);
+  if(hist[r].length>MAX)hist[r].shift();
+  if(d.is_anomaly){acnt++;alog.unshift(d);if(alog.length>20)alog.pop();}
+  if(!room)selRoom(r);
+  updTabs();updSummary();
+  if(room===r)updCharts();
+  updMetrics();updAlog();
+}
+function selRoom(r){
+  room=r;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const t=document.querySelector(`[data-room="${r}"]`);
+  if(t)t.classList.add('active');
+  document.getElementById('rl1').textContent=r;
+  document.getElementById('rl2').textContent=r;
+  updCharts();updMetrics();
+}
+function updTabs(){
+  const el=document.getElementById('tabs');
+  Object.keys(latest).forEach(r=>{
+    if(!document.querySelector(`[data-room="${r}"]`)){
+      const b=document.createElement('button');
+      b.className='tab';b.dataset.room=r;b.textContent=r.replace('_',' ');
+      b.onclick=()=>selRoom(r);el.appendChild(b);
+    }
+    const b=document.querySelector(`[data-room="${r}"]`);
+    b.classList.toggle('anom',!!latest[r]?.is_anomaly);
+  });
+}
+function updSummary(){
+  const rs=Object.values(latest);
+  document.getElementById('s-rooms').textContent=rs.length;
+  if(rs.length){
+    const at=rs.reduce((s,r)=>s+r.temperature,0)/rs.length;
+    const mc=Math.max(...rs.map(r=>r.co2));
+    document.getElementById('s-temp').textContent=at.toFixed(1);
+    document.getElementById('s-co2').textContent=Math.round(mc);
+    document.getElementById('s-anom').textContent=acnt;
+    document.getElementById('sc-temp').className='scard'+(at>30?' danger':at>26?' warn':'');
+    document.getElementById('sc-co2').className='scard'+(mc>1200?' danger':mc>900?' warn':'');
+  }
+}
+function updCharts(){
+  if(!room||!hist[room])return;
+  const h=hist[room];
+  const lb=h.map(r=>r.timestamp.slice(11,19));
+  tc.data.labels=lb;tc.data.datasets[0].data=h.map(r=>r.temperature);tc.update('none');
+  cc.data.labels=lb;cc.data.datasets[0].data=h.map(r=>r.co2);cc.update('none');
+}
+function updMetrics(){
+  if(!room||!latest[room])return;
+  const d=latest[room];
+  const ms=[
+    {n:'Temperature',v:d.temperature.toFixed(1),u:'°C',mn:10,mx:40,c:'#00d4ff'},
+    {n:'Humidity',v:d.humidity.toFixed(1),u:'%',mn:0,mx:100,c:'#7c3aed'},
+    {n:'CO₂',v:Math.round(d.co2),u:'ppm',mn:300,mx:1800,c:'#10b981'},
+    {n:'Motion',v:d.motion?'YES':'NO',u:'',mn:0,mx:1,c:'#f59e0b',raw:d.motion?1:0},
+  ];
+  document.getElementById('metrics').innerHTML=ms.map(m=>{
+    const p=m.raw!==undefined?m.raw*100:((parseFloat(m.v)-m.mn)/(m.mx-m.mn))*100;
+    return`<div class="mrow"><span class="mname">${m.n}</span><div class="mbw"><div class="mb" style="width:${Math.max(0,Math.min(100,p))}%;background:${m.c}"></div></div><span class="mval" style="color:${m.c}">${m.v}<small style="font-size:.6em;color:#64748b"> ${m.u}</small></span></div>`;
+  }).join('');
+}
+function updAlog(){
+  if(!alog.length)return;
+  document.getElementById('alog').innerHTML=alog.slice(0,10).map(a=>`
+    <div class="aitem"><span class="abadge">ANOMALY</span><span class="atime">${a.timestamp.slice(11,19)}</span><span class="aroom">${a.room}</span><span>${a.temperature.toFixed(1)}°C ${a.humidity.toFixed(0)}% CO₂:${Math.round(a.co2)}</span></div>
+  `).join('');
+}
+connect();
+</script>
+</body>
+</html>
