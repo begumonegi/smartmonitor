@@ -1,0 +1,4 @@
+paho-mqtt==1.6.1
+adafruit-circuitpython-dht
+adafruit-circuitpython-mcp3xxx
+RPi.GPIO
