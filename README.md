@@ -2,7 +2,9 @@
 
 > Real-time IoT building monitoring system with MQTT data transmission, ML anomaly detection, and live web dashboard.
 
-![SmartMonitor Dashboard](docs/images/dashboard.png)
+<img width="1822" height="934" alt="dashboard" src="https://github.com/user-attachments/assets/954b181c-c1cc-4e1e-a2d5-3a2b153cf221" />
+
+
 
 ## Overview
 
