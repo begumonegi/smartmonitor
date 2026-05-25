@@ -106,8 +106,8 @@ Two-layer detection system:
 - [x] Phase 1 — MQTT simulator + FastAPI backend + SQLite
 - [x] Phase 2 — WebSocket dashboard + real-time charts
 - [x] Phase 3 — ML anomaly detection + alert system
-- [ ] Phase 4 — Docker Compose deployment
-- [ ] Phase 5 — Raspberry Pi integration
+- [x] Phase 4 — Docker Compose deployment
+- [x] Phase 5 — Raspberry Pi integration (DHT22, MQ-135, PIR)
 
 ## Author
 
