@@ -47,7 +47,7 @@ def on_mqtt_message(client, userdata, msg):
 def start_mqtt():
     client = mqtt.Client(client_id="smartmonitor_backend")
     client.on_message = on_mqtt_message
-    client.connect("localhost", 1883, 60)
+    client.connect(os.environ.get("MQTT_HOST", "localhost"), 1883, 60)
     client.subscribe("smartmonitor/sensors/#")
     client.loop_forever()
 
@@ -97,5 +97,5 @@ async def websocket_endpoint(ws: WebSocket):
 
 from fastapi.staticfiles import StaticFiles
 import os
-frontend_path = os.path.join(os.path.dirname(__file__), "../frontend")
+frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
 app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")

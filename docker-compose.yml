@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mosquitto
+    environment:
+      - MQTT_HOST=mosquitto
+
+  simulator:
+    build: ./simulator
+    depends_on:
+      - mosquitto
+    environment:
+      - MQTT_HOST=mosquitto

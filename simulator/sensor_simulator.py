@@ -1,8 +1,9 @@
 import json, time, random, math
 from datetime import datetime
+import os
 import paho.mqtt.client as mqtt
 
-BROKER_HOST = "localhost"
+import os; BROKER_HOST = os.environ.get("MQTT_HOST", "localhost")
 BROKER_PORT = 1883
 PUBLISH_INTERVAL = 2
 
